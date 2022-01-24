@@ -3,22 +3,29 @@ import com.sun.net.httpserver.HttpServer;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.concurrent.Executors;
+import java.util.ArrayList;
 import java.util.concurrent.ThreadPoolExecutor;
 
 public class HTTPServer {
     private final HttpServer server;
-    private final ThreadPoolExecutor threadPoolExecutor;
+    private final int port;
 
-    public HTTPServer() throws IOException {
-        server = HttpServer.create(new InetSocketAddress("localhost", 8001), 0);
-        server.createContext("/test", new Handler());
+    public HTTPServer(int port, ThreadPoolExecutor threadPoolExecutor, HandlerType type, LRUCache cache, ArrayList<NodeEndpoint> endpoints) throws IOException {
+        this.port = port;
+        server = HttpServer.create(new InetSocketAddress("localhost", port), 0);
 
-        threadPoolExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(2);
+        switch (type) {
+            case CLIENT ->
+                    server.createContext("/endpoint", new ClientHandler(cache, endpoints));
+            case P2P ->
+                    server.createContext("/endpoint", new p2pHandler(cache));
+        }
+
         server.setExecutor(threadPoolExecutor);
     }
     public void start(){
         server.start();
     }
+
 
 }
